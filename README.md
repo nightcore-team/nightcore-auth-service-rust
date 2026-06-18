@@ -1,0 +1,1 @@
+# nightcore-auth-service-rust
