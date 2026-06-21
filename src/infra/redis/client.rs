@@ -1,6 +1,6 @@
 use redis::{RedisError, aio::ConnectionManager};
 
-use crate::infra::redis::config::Config as RedisConfig;
+use crate::core::config::RedisConfig;
 
 pub async fn create_redis_client(config: &RedisConfig) -> Result<ConnectionManager, RedisError> {
     let url = match &config.redis_password {
@@ -14,5 +14,6 @@ pub async fn create_redis_client(config: &RedisConfig) -> Result<ConnectionManag
         ),
     };
     let client = redis::Client::open(url.as_str())?;
+
     ConnectionManager::new(client).await
 }
