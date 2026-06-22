@@ -48,15 +48,15 @@ impl IStorageRepository for RedisStorageRepository {
             .query_async(&mut conn)
             .await?;
 
-        // serde_json::Error не реализует Into<AuthError>, надо конвертировать
-        // Ok(session.user_id)
-
         Ok(session)
     }
-    async fn get(&self, refresh_token: &str) -> Result<Option<String>, AuthError> {
+    async fn get(&self, refresh_token: &str) -> Result<Option<Session>, AuthError> {
         let mut conn = self.client.clone();
         let data: Option<String> = conn.get(Self::session_key(refresh_token)).await?;
-        Ok(data)
+        match data {
+            Some(json) => Ok(Some(serde_json::from_str(&json)?)),
+            None => Ok(None),
+        }
     }
 
     async fn delete(&self, user_id: &str, refresh_token: Option<&str>) -> Result<u64, AuthError> {

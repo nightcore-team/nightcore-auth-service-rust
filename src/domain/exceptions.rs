@@ -11,8 +11,14 @@ pub enum AuthError {
     #[error("Token has been revoked")]
     TokenRevoked,
 
+    #[error("Authorization code not provided")]
+    AuthorizationCodeNotProvided,
+
     #[error("Discord auth error: {0}")]
     DiscordAuth(String),
+
+    #[error("HTTP request error: {0}")]
+    Http(#[from] reqwest::Error),
 
     #[error("Redis error: {0}")]
     Redis(#[from] redis::RedisError),

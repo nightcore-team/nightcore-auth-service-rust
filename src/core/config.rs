@@ -4,6 +4,7 @@ pub trait BaseConfig: Sized {
     fn from_env() -> Self;
 }
 
+#[derive(Clone)]
 pub struct RedisConfig {
     pub redis_host: String,
     pub redis_port: u16,
@@ -28,6 +29,7 @@ impl BaseConfig for RedisConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct DiscordConfig {
     pub discord_auth_client_id: String,
     pub discord_auth_client_secret: String,
@@ -47,6 +49,7 @@ impl BaseConfig for DiscordConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct ApiConfig {
     pub api_host: String,
     pub api_port: u16,
@@ -67,6 +70,7 @@ impl BaseConfig for ApiConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct AppConfig {
     pub redis: RedisConfig,
     pub discord: DiscordConfig,
