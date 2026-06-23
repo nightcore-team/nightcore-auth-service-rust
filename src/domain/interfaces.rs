@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::domain::entities::{RequestData, Session, Token, TokenData};
+use crate::domain::entities::{DiscordUser, RequestData, Session, Token, TokenData};
 use crate::domain::exceptions::AuthError;
 
 #[async_trait]
@@ -8,7 +8,7 @@ pub trait IOAuthProvider: Send + Sync {
     fn get_authorization_url(&self) -> String;
     fn get_request_data(&self, code: &str) -> RequestData;
     async fn exchange_code(&self, code: Option<&str>) -> Result<TokenData, AuthError>;
-    async fn get_user_info(&self, token_data: &TokenData) -> Result<String, AuthError>;
+    async fn get_user_info(&self, token_data: &TokenData) -> Result<DiscordUser, AuthError>;
 }
 
 pub trait ITokenService: Send + Sync {

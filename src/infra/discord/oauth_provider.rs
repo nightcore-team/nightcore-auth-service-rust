@@ -6,7 +6,7 @@ use reqwest::Client;
 use crate::{
     core::config::DiscordConfig,
     domain::{
-        entities::{RequestData, TokenData},
+        entities::{DiscordUser, RequestData, TokenData},
         exceptions::AuthError,
         interfaces::IOAuthProvider,
     },
@@ -14,11 +14,15 @@ use crate::{
 
 pub struct DiscordOAuthProvider {
     config: Arc<DiscordConfig>,
+    client: Client,
 }
 
 impl DiscordOAuthProvider {
     pub fn new(config: Arc<DiscordConfig>) -> Self {
-        Self { config }
+        Self {
+            config,
+            client: Client::new(),
+        }
     }
 }
 
@@ -48,8 +52,8 @@ impl IOAuthProvider for DiscordOAuthProvider {
     async fn exchange_code(&self, code: Option<&str>) -> Result<TokenData, AuthError> {
         let code = code.ok_or(AuthError::AuthorizationCodeNotProvided)?;
 
-        let client = Client::new();
-        let response = client
+        let response = self
+            .client
             .post("https://discord.com/api/oauth2/token")
             .form(&self.get_request_data(code))
             .header("Content-Type", "application/x-www-form-urlencoded")
@@ -57,19 +61,34 @@ impl IOAuthProvider for DiscordOAuthProvider {
             .await?;
 
         let status = response.status();
-        let body = response.text().await?;
-
         if !status.is_success() {
+            let body = response.text().await?;
             return Err(AuthError::DiscordAuth(format!(
                 "Discord API error {status}: {body}"
             )));
         }
 
-        let token_data: TokenData = serde_json::from_str(&body)?;
+        let token_data: TokenData = response.json().await?;
         Ok(token_data)
     }
 
-    async fn get_user_info(&self, token_data: &TokenData) -> Result<String, AuthError> {
-        todo!()
+    async fn get_user_info(&self, token_data: &TokenData) -> Result<DiscordUser, AuthError> {
+        let response = self
+            .client
+            .get("https://discord.com/api/users/@me")
+            .bearer_auth(&token_data.access_token)
+            .send()
+            .await?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let body = response.text().await?;
+            return Err(AuthError::DiscordAuth(format!(
+                "Discord API error {status}: {body}"
+            )));
+        }
+
+        let user: DiscordUser = response.json().await?;
+        Ok(user)
     }
 }

@@ -31,6 +31,7 @@ pub struct Session {
     pub expires_in: i64,
 }
 
+#[derive(Deserialize)]
 pub struct DiscordUser {
-    id: String,
+    pub id: String,
 }

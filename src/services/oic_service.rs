@@ -1,19 +1,21 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 
 use crate::domain::entities::Token;
 use crate::domain::interfaces::{IOAuthProvider, IOICService, IStorageRepository, ITokenService};
 
 pub struct OICService {
-    oauth_provider: Box<dyn IOAuthProvider>,
-    token_service: Box<dyn ITokenService>,
-    storage: Box<dyn IStorageRepository>,
+    pub oauth_provider: Arc<dyn IOAuthProvider>,
+    pub token_service: Arc<dyn ITokenService>,
+    pub storage: Arc<dyn IStorageRepository>,
 }
 
 impl OICService {
     pub fn new(
-        oauth_provider: Box<dyn IOAuthProvider>,
-        token_service: Box<dyn ITokenService>,
-        storage: Box<dyn IStorageRepository>,
+        oauth_provider: Arc<dyn IOAuthProvider>,
+        token_service: Arc<dyn ITokenService>,
+        storage: Arc<dyn IStorageRepository>,
     ) -> Self {
         Self {
             oauth_provider,

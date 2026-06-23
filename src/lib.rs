@@ -32,11 +32,11 @@ async fn setup_application() -> (Router, TcpListener, String) {
 
     let redis_client = create_redis_client(&config.redis)
         .await
-        .expect("Failed to connect to Redis");
+        .expect("Failed to connect to redis.");
 
-    let oauth_provider = Box::new(DiscordOAuthProvider::new(Arc::new(config.discord.clone())));
-    let storage = Box::new(RedisStorageRepository::new(redis_client));
-    let token_service = Box::new(JwtTokenService::new());
+    let oauth_provider = Arc::new(DiscordOAuthProvider::new(Arc::new(config.discord.clone())));
+    let storage = Arc::new(RedisStorageRepository::new(redis_client));
+    let token_service = Arc::new(JwtTokenService::new());
 
     let oic_service = OICService::new(oauth_provider, token_service, storage);
 
