@@ -26,3 +26,6 @@ target
 
 # Environment variables
 .env
+
+# MacOS files metadata
+.DS_Store
