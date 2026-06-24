@@ -27,8 +27,9 @@ pub trait IStorageRepository: Send + Sync {
         ttl: i64,
     ) -> Result<Session, AuthError>;
 
-    async fn get(&self, refresh_token: &str) -> Result<Option<Session>, AuthError>;
-    async fn delete(&self, user_id: &str, refresh_token: Option<&str>) -> Result<u64, AuthError>;
+    async fn get_del(&self, refresh_token: &str) -> Result<Option<Session>, AuthError>;
+    async fn delete(&self, user_id: &str, refresh_token: &str) -> Result<(), AuthError>;
+    async fn delete_all(&self, user_id: &str) -> Result<u64, AuthError>;
 }
 
 #[async_trait]

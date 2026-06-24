@@ -28,8 +28,6 @@ pub struct RequestData {
 pub struct Session {
     pub user_id: String,
     pub ip_address: String,
-    pub refresh_token: String,
-    pub expires_in: i64,
 }
 
 #[derive(Deserialize)]

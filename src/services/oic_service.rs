@@ -35,14 +35,17 @@ impl OICService {
 #[async_trait]
 impl IOICService for OICService {
     async fn login(&self, code: &str, _ip_address: &str) -> Result<Token, AuthError> {
-        let token_data = self.oauth_provider.exchange_code(String::from(code)).await?;
+        let token_data = self
+            .oauth_provider
+            .exchange_code(String::from(code))
+            .await?;
         let user_info = self.oauth_provider.get_user_info(token_data).await?;
 
         let access_token = self.token_service.create_access_token(&user_info.id)?;
         let refresh_token = self.token_service.create_refresh_token();
         let refresh_token_max_age = self.config.jwt.jwt_refresh_token_expire_days * 24 * 3600;
 
-        // self.storage.delete(&user_info.id, None).await?;
+        // self.storage.delete_all(&user_info.id).await?;
         // self.storage
         //     .create(&user_info.id, &refresh_token, ip_address, refresh_token_max_age)
         //     .await?;
@@ -55,21 +58,13 @@ impl IOICService for OICService {
     }
 
     async fn refresh(&self, _refresh_token: &str, _ip_address: &str) -> Result<Token, AuthError> {
-        // let session = self.storage.get(refresh_token).await??;
+        // let session = self.storage.get_del(refresh_token).await?;
+
+        // let Some(session) = session else {
+        //     return Err(AuthError::SessionNotFound("Session not found".into()));
+        // };
 
         // if session.ip_address != ip_address {
-        //     self.storage
-        //         .delete(&session.user_id, Some(refresh_token))
-        //         .await?;
-        //     return Err(AuthError::TokenRevoked);
-        // }
-
-        // let keys_count = self
-        //     .storage
-        //     .delete(&session.user_id, Some(refresh_token))
-        //     .await?;
-
-        // if keys_count < 1 {
         //     return Err(AuthError::TokenRevoked);
         // }
 
@@ -89,9 +84,7 @@ impl IOICService for OICService {
     }
 
     async fn logout(&self, _user_id: &str, _refresh_token: &str) -> Result<(), AuthError> {
-        // self.storage
-        //     .delete(user_id, Some(refresh_token))
-        //     .await?;
+        // self.storage.delete(user_id, refresh_token).await?;
         Ok(())
     }
 }
