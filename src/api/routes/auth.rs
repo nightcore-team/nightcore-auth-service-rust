@@ -10,27 +10,20 @@ use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 
 use crate::api::state::GlobalState;
+use crate::api::utils::auth_error_response;
 use crate::domain::exceptions::AuthError;
 use crate::domain::interfaces::IOICService;
 
-fn auth_error_response(err: AuthError) -> (StatusCode, Json<serde_json::Value>) {
-    let status = match err {
-        AuthError::SessionNotFound(_)
-        | AuthError::RefreshTokenNotProvided
-        | AuthError::TokenRevoked => StatusCode::UNAUTHORIZED,
-        AuthError::AuthorizationCodeNotProvided => StatusCode::BAD_REQUEST,
-        AuthError::DiscordAuth(_) | AuthError::Http(_) => StatusCode::BAD_GATEWAY,
-        AuthError::InvalidToken(_)
-        | AuthError::Redis(_)
-        | AuthError::Serde(_) => StatusCode::INTERNAL_SERVER_ERROR,
-    };
-
-    (
-        status,
-        Json(serde_json::json!({"detail": err.to_string()})),
-    )
-}
-
+#[utoipa::path(
+    post,
+    path = "/auth/refresh",
+    responses(
+        (status = 200, description = "Tokens refreshed successfully", body = inline(serde_json::Value)),
+        (status = 401, description = "Invalid or missing refresh token", body = inline(serde_json::Value)),
+        (status = 403, description = "Direct access not allowed", body = inline(serde_json::Value)),
+        (status = 502, description = "Upstream error", body = inline(serde_json::Value)),
+    ),
+)]
 pub async fn refresh_token_handler(
     State(state): State<Arc<GlobalState>>,
     jar: CookieJar,
@@ -78,6 +71,13 @@ pub async fn refresh_token_handler(
         .into_response()
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/logout",
+    responses(
+        (status = 302, description = "Redirect to dashboard"),
+    ),
+)]
 pub async fn logout_handler(
     State(state): State<Arc<GlobalState>>,
     jar: CookieJar,
@@ -98,10 +98,31 @@ pub async fn logout_handler(
 
     (jar, Redirect::to(&state.config.api.dashboard_frontend_uri)).into_response()
 }
+#[utoipa::path(
+    get,
+    path = "/auth/login",
+    responses(
+        (status = 302, description = "Redirect to Discord OAuth authorization URL"),
+    ),
+)]
 pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Redirect {
     Redirect::temporary(&state.oic_service.oauth_provider.get_authorization_url())
 }
 
+#[utoipa::path(
+    get,
+    path = "/auth/discord/callback",
+    params(
+        ("code" = Option<String>, Query, description = "Authorization code from Discord"),
+        ("error" = Option<String>, Query, description = "Error from Discord if user denied access"),
+    ),
+    responses(
+        (status = 302, description = "Redirect to dashboard with refresh_token cookie"),
+        (status = 400, description = "Authorization code not found", body = inline(serde_json::Value)),
+        (status = 403, description = "Direct access not allowed", body = inline(serde_json::Value)),
+        (status = 502, description = "Discord API error", body = inline(serde_json::Value)),
+    ),
+)]
 pub async fn discord_callback_handler(
     State(state): State<Arc<GlobalState>>,
     Query(params): Query<HashMap<String, String>>,
