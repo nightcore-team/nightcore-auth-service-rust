@@ -11,9 +11,74 @@ use axum_extra::extract::cookie::{Cookie, CookieJar};
 
 use crate::{api::state::GlobalState, domain::interfaces::IOICService};
 
-pub async fn refresh_token_handler() {}
+pub async fn refresh_token_handler(
+    State(state): State<Arc<GlobalState>>,
+    jar: CookieJar,
+    request: Request<Body>,
+) -> impl IntoResponse {
+    let refresh_token = jar.get("refresh_token").map(|c| c.value().to_string());
 
-pub async fn logout_handler() {}
+    let Some(refresh_token) = refresh_token else {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({"detail": "Refresh token not found"})),
+        )
+            .into_response();
+    };
+
+    let ip = request
+        .headers()
+        .get("CF-Connecting-IP")
+        .and_then(|v| v.to_str().ok());
+
+    let Some(ip) = ip else {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({"detail": "Direct access not allowed"})),
+        )
+            .into_response();
+    };
+
+    let token = state.oic_service.refresh(&refresh_token, ip).await;
+
+    let cookie = Cookie::build(("refresh_token", token.refresh_token))
+        .http_only(true)
+        .max_age(time::Duration::seconds(token.refresh_token_max_age))
+        .path("/")
+        .build();
+
+    let jar = CookieJar::new().add(cookie);
+
+    (
+        jar,
+        Json(serde_json::json!({
+            "access_token": token.access_token,
+            "refresh_token_max_age": token.refresh_token_max_age,
+        })),
+    )
+        .into_response()
+}
+
+pub async fn logout_handler(
+    State(state): State<Arc<GlobalState>>,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    let refresh_token = jar.get("refresh_token").map(|c| c.value().to_string());
+
+    if let Some(refresh_token) = refresh_token {
+        state.oic_service.logout("", &refresh_token).await;
+    }
+
+    let cookie = Cookie::build(("refresh_token", ""))
+        .http_only(true)
+        .max_age(time::Duration::seconds(0))
+        .path("/")
+        .build();
+
+    let jar = CookieJar::new().add(cookie);
+
+    (jar, Redirect::to(&state.config.api.dashboard_frontend_uri)).into_response()
+}
 
 pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Redirect {
     Redirect::temporary(&state.oic_service.oauth_provider.get_authorization_url())

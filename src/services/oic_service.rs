@@ -33,7 +33,7 @@ impl OICService {
 
 #[async_trait]
 impl IOICService for OICService {
-    async fn login(&self, code: &str, ip_address: &str) -> Token {
+    async fn login(&self, code: &str, _ip_address: &str) -> Token {
         let token_data = self.oauth_provider.exchange_code(String::from(code)).await;
         let user_info = self
             .oauth_provider
@@ -58,7 +58,7 @@ impl IOICService for OICService {
         }
     }
 
-    async fn refresh(&self, refresh_token: &str, ip_address: &str) -> Token {
+    async fn refresh(&self, _refresh_token: &str, _ip_address: &str) -> Token {
         // let session = self.storage.get(refresh_token).await.unwrap().unwrap();
 
         // if session.ip_address != ip_address {
@@ -95,7 +95,7 @@ impl IOICService for OICService {
         }
     }
 
-    async fn logout(&self, user_id: &str, refresh_token: &str) {
+    async fn logout(&self, _user_id: &str, _refresh_token: &str) {
         // self.storage
         //     .delete(user_id, Some(refresh_token))
         //     .await
