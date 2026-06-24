@@ -23,7 +23,6 @@ pub trait IStorageRepository: Send + Sync {
         &self,
         user_id: &str,
         refresh_token: &str,
-        ip_address: &str,
         ttl: i64,
     ) -> Result<Session, AuthError>;
 
@@ -34,7 +33,7 @@ pub trait IStorageRepository: Send + Sync {
 
 #[async_trait]
 pub trait IOICService: Send + Sync {
-    async fn login(&self, code: &str, ip_address: &str) -> Result<Token, AuthError>;
-    async fn refresh(&self, refresh_token: &str, ip_address: &str) -> Result<Token, AuthError>;
+    async fn login(&self, code: &str) -> Result<Token, AuthError>;
+    async fn refresh(&self, refresh_token: &str) -> Result<Token, AuthError>;
     async fn logout(&self, user_id: &str, refresh_token: &str) -> Result<(), AuthError>;
 }

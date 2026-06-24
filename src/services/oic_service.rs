@@ -32,7 +32,7 @@ impl OICService {
 
 #[async_trait]
 impl IOICService for OICService {
-    async fn login(&self, code: &str, ip_address: &str) -> Result<Token, AuthError> {
+    async fn login(&self, code: &str) -> Result<Token, AuthError> {
         let token_data = self
             .oauth_provider
             .exchange_code(String::from(code))
@@ -45,12 +45,7 @@ impl IOICService for OICService {
 
         self.storage.delete_all(&user_info.id).await?;
         self.storage
-            .create(
-                &user_info.id,
-                &refresh_token,
-                ip_address,
-                refresh_token_max_age,
-            )
+            .create(&user_info.id, &refresh_token, refresh_token_max_age)
             .await?;
 
         Ok(Token {
@@ -60,28 +55,19 @@ impl IOICService for OICService {
         })
     }
 
-    async fn refresh(&self, refresh_token: &str, ip_address: &str) -> Result<Token, AuthError> {
+    async fn refresh(&self, refresh_token: &str) -> Result<Token, AuthError> {
         let session = self.storage.get_del(refresh_token).await?;
 
         let Some(session) = session else {
             return Err(AuthError::SessionNotFound("Session not found".into()));
         };
 
-        if session.ip_address != ip_address {
-            return Err(AuthError::TokenRevoked);
-        }
-
         let access_token = self.token_service.create_access_token(&session.user_id)?;
         let refresh_token = self.token_service.create_refresh_token();
         let refresh_token_max_age = self.config.jwt.jwt_refresh_token_expire_days * 24 * 3600;
 
         self.storage
-            .create(
-                &session.user_id,
-                &refresh_token,
-                ip_address,
-                refresh_token_max_age,
-            )
+            .create(&session.user_id, &refresh_token, refresh_token_max_age)
             .await?;
 
         Ok(Token {

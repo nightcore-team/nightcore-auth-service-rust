@@ -2,9 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::Json;
-use axum::body::Body;
 use axum::extract::{Query, State};
-use axum::http::Request;
 use axum::http::status::StatusCode;
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, CookieJar};
@@ -27,7 +25,6 @@ use crate::domain::interfaces::IOICService;
 pub async fn refresh_token_handler(
     State(state): State<Arc<GlobalState>>,
     jar: CookieJar,
-    request: Request<Body>,
 ) -> impl IntoResponse {
     let refresh_token = jar.get("refresh_token").map(|c| c.value().to_string());
 
@@ -35,20 +32,7 @@ pub async fn refresh_token_handler(
         return auth_error_response(AuthError::RefreshTokenNotProvided).into_response();
     };
 
-    let ip = request
-        .headers()
-        .get("CF-Connecting-IP")
-        .and_then(|v| v.to_str().ok());
-
-    let Some(ip) = ip else {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"detail": "Direct access not allowed"})),
-        )
-            .into_response();
-    };
-
-    let token = match state.oic_service.refresh(&refresh_token, ip).await {
+    let token = match state.oic_service.refresh(&refresh_token).await {
         Ok(token) => token,
         Err(e) => return auth_error_response(e).into_response(),
     };
@@ -126,7 +110,6 @@ pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Redirect {
 pub async fn discord_callback_handler(
     State(state): State<Arc<GlobalState>>,
     Query(params): Query<HashMap<String, String>>,
-    request: Request<Body>,
 ) -> impl IntoResponse {
     let error = params.get("error");
     let code = params.get("code");
@@ -146,20 +129,7 @@ pub async fn discord_callback_handler(
             .into_response();
     };
 
-    let ip = request
-        .headers()
-        .get("CF-Connecting-IP")
-        .and_then(|v| v.to_str().ok());
-
-    let Some(ip) = ip else {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(serde_json::json!({"detail": "Direct access not allowed"})),
-        )
-            .into_response();
-    };
-
-    let token = match state.oic_service.login(&code, &ip).await {
+    let token = match state.oic_service.login(code).await {
         Ok(token) => token,
         Err(e) => return auth_error_response(e).into_response(),
     };

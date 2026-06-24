@@ -27,7 +27,6 @@ pub struct RequestData {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Session {
     pub user_id: String,
-    pub ip_address: String,
 }
 
 #[derive(Deserialize)]

@@ -28,12 +28,10 @@ impl IStorageRepository for RedisStorageRepository {
         &self,
         user_id: &str,
         refresh_token: &str,
-        ip_address: &str,
         ttl: i64,
     ) -> Result<Session, AuthError> {
         let session = Session {
             user_id: user_id.to_string(),
-            ip_address: ip_address.to_string(),
         };
 
         let json = serde_json::to_string(&session)?;
