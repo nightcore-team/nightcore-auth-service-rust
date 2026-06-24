@@ -12,10 +12,9 @@ pub trait IOAuthProvider: Send + Sync {
 }
 
 pub trait ITokenService: Send + Sync {
-    fn create_access_token(&self, user_id: &str) -> String;
+    fn create_access_token(&self, user_id: &str) -> Result<String, AuthError>;
     fn create_refresh_token(&self) -> String;
     fn sign(&self, payload: serde_json::Value) -> Result<String, AuthError>;
-    fn decode_key(&self, v: &str) -> String;
 }
 
 #[async_trait]
@@ -34,7 +33,7 @@ pub trait IStorageRepository: Send + Sync {
 
 #[async_trait]
 pub trait IOICService: Send + Sync {
-    async fn login(&self, code: &str, ip_address: &str) -> Token;
-    async fn refresh(&self, refresh_token: &str, ip_address: &str) -> Token;
-    async fn logout(&self, user_id: &str, refresh_token: &str);
+    async fn login(&self, code: &str, ip_address: &str) -> Result<Token, AuthError>;
+    async fn refresh(&self, refresh_token: &str, ip_address: &str) -> Result<Token, AuthError>;
+    async fn logout(&self, user_id: &str, refresh_token: &str) -> Result<(), AuthError>;
 }

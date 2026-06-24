@@ -10,7 +10,26 @@ use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 
 use crate::api::state::GlobalState;
+use crate::domain::exceptions::AuthError;
 use crate::domain::interfaces::IOICService;
+
+fn auth_error_response(err: AuthError) -> (StatusCode, Json<serde_json::Value>) {
+    let status = match err {
+        AuthError::SessionNotFound(_)
+        | AuthError::RefreshTokenNotProvided
+        | AuthError::TokenRevoked => StatusCode::UNAUTHORIZED,
+        AuthError::AuthorizationCodeNotProvided => StatusCode::BAD_REQUEST,
+        AuthError::DiscordAuth(_) | AuthError::Http(_) => StatusCode::BAD_GATEWAY,
+        AuthError::InvalidToken(_)
+        | AuthError::Redis(_)
+        | AuthError::Serde(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    };
+
+    (
+        status,
+        Json(serde_json::json!({"detail": err.to_string()})),
+    )
+}
 
 pub async fn refresh_token_handler(
     State(state): State<Arc<GlobalState>>,
@@ -20,11 +39,7 @@ pub async fn refresh_token_handler(
     let refresh_token = jar.get("refresh_token").map(|c| c.value().to_string());
 
     let Some(refresh_token) = refresh_token else {
-        return (
-            StatusCode::UNAUTHORIZED,
-            Json(serde_json::json!({"detail": "Refresh token not found"})),
-        )
-            .into_response();
+        return auth_error_response(AuthError::RefreshTokenNotProvided).into_response();
     };
 
     let ip = request
@@ -40,7 +55,10 @@ pub async fn refresh_token_handler(
             .into_response();
     };
 
-    let token = state.oic_service.refresh(&refresh_token, ip).await;
+    let token = match state.oic_service.refresh(&refresh_token, ip).await {
+        Ok(token) => token,
+        Err(e) => return auth_error_response(e).into_response(),
+    };
 
     let cookie = Cookie::build(("refresh_token", token.refresh_token))
         .http_only(true)
@@ -67,7 +85,7 @@ pub async fn logout_handler(
     let refresh_token = jar.get("refresh_token").map(|c| c.value().to_string());
 
     if let Some(refresh_token) = refresh_token {
-        state.oic_service.logout("", &refresh_token).await;
+        let _ = state.oic_service.logout("", &refresh_token).await;
     }
 
     let cookie = Cookie::build(("refresh_token", ""))
@@ -80,7 +98,6 @@ pub async fn logout_handler(
 
     (jar, Redirect::to(&state.config.api.dashboard_frontend_uri)).into_response()
 }
-
 pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Redirect {
     Redirect::temporary(&state.oic_service.oauth_provider.get_authorization_url())
 }
@@ -121,7 +138,10 @@ pub async fn discord_callback_handler(
             .into_response();
     };
 
-    let token = state.oic_service.login(&code, &ip).await;
+    let token = match state.oic_service.login(&code, &ip).await {
+        Ok(token) => token,
+        Err(e) => return auth_error_response(e).into_response(),
+    };
 
     let cookie = Cookie::build(("refresh_token", token.refresh_token))
         .http_only(true)

@@ -4,6 +4,7 @@ use async_trait::async_trait;
 
 use crate::core::config::AppConfig;
 use crate::domain::entities::Token;
+use crate::domain::exceptions::AuthError;
 use crate::domain::interfaces::{
     IOAuthProvider, IOICService, /* IStorageRepository, */ ITokenService,
 };
@@ -33,72 +34,64 @@ impl OICService {
 
 #[async_trait]
 impl IOICService for OICService {
-    async fn login(&self, code: &str, _ip_address: &str) -> Token {
-        let token_data = self.oauth_provider.exchange_code(String::from(code)).await;
-        let user_info = self
-            .oauth_provider
-            .get_user_info(token_data.unwrap())
-            .await
-            .unwrap();
+    async fn login(&self, code: &str, _ip_address: &str) -> Result<Token, AuthError> {
+        let token_data = self.oauth_provider.exchange_code(String::from(code)).await?;
+        let user_info = self.oauth_provider.get_user_info(token_data).await?;
 
-        let access_token = self.token_service.create_access_token(&user_info.id);
+        let access_token = self.token_service.create_access_token(&user_info.id)?;
         let refresh_token = self.token_service.create_refresh_token();
         let refresh_token_max_age = self.config.jwt.jwt_refresh_token_expire_days * 24 * 3600;
 
-        // self.storage.delete(&user_info.id, None).await.unwrap();
+        // self.storage.delete(&user_info.id, None).await?;
         // self.storage
         //     .create(&user_info.id, &refresh_token, ip_address, refresh_token_max_age)
-        //     .await
-        //     .unwrap();
+        //     .await?;
 
-        Token {
+        Ok(Token {
             access_token: access_token,
             refresh_token: refresh_token,
             refresh_token_max_age: refresh_token_max_age,
-        }
+        })
     }
 
-    async fn refresh(&self, _refresh_token: &str, _ip_address: &str) -> Token {
-        // let session = self.storage.get(refresh_token).await.unwrap().unwrap();
+    async fn refresh(&self, _refresh_token: &str, _ip_address: &str) -> Result<Token, AuthError> {
+        // let session = self.storage.get(refresh_token).await??;
 
         // if session.ip_address != ip_address {
         //     self.storage
         //         .delete(&session.user_id, Some(refresh_token))
-        //         .await
-        //         .unwrap();
-        //     panic!("Invalid or revoked token")
+        //         .await?;
+        //     return Err(AuthError::TokenRevoked);
         // }
 
         // let keys_count = self
         //     .storage
         //     .delete(&session.user_id, Some(refresh_token))
-        //     .await
-        //     .unwrap();
+        //     .await?;
 
         // if keys_count < 1 {
-        //     panic!("Token already used or expired")
+        //     return Err(AuthError::TokenRevoked);
         // }
 
-        let access_token = self.token_service.create_access_token("user_id");
+        let access_token = self.token_service.create_access_token("user_id")?;
         let refresh_token = self.token_service.create_refresh_token();
         let refresh_token_max_age = self.config.jwt.jwt_refresh_token_expire_days * 24 * 3600;
 
         // self.storage
         //     .create(&session.user_id, &refresh_token, ip_address, refresh_token_max_age)
-        //     .await
-        //     .unwrap();
+        //     .await?;
 
-        Token {
+        Ok(Token {
             access_token: access_token,
             refresh_token: refresh_token,
             refresh_token_max_age: refresh_token_max_age,
-        }
+        })
     }
 
-    async fn logout(&self, _user_id: &str, _refresh_token: &str) {
+    async fn logout(&self, _user_id: &str, _refresh_token: &str) -> Result<(), AuthError> {
         // self.storage
         //     .delete(user_id, Some(refresh_token))
-        //     .await
-        //     .unwrap();
+        //     .await?;
+        Ok(())
     }
 }

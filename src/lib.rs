@@ -26,7 +26,7 @@ use crate::services::oic_service::OICService;
 use crate::utils::logging::setup_logging;
 
 async fn setup_application() -> (Router, TcpListener, String) {
-    let config = AppConfig::from_env();
+    let config = Arc::new(AppConfig::from_env());
 
     let bind = format!("{}:{}", config.api.api_host, config.api.api_port);
 
@@ -38,7 +38,7 @@ async fn setup_application() -> (Router, TcpListener, String) {
     // let storage = Arc::new(RedisStorageRepository::new(redis_client));
     let token_service = Arc::new(JwtTokenService::new(Arc::new(config.jwt.clone())));
 
-    let oic_service = OICService::new(oauth_provider, token_service, Arc::new(config.clone()));
+    let oic_service = OICService::new(oauth_provider, token_service, config.clone());
 
     let state = Arc::new(GlobalState {
         config,

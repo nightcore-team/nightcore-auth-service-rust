@@ -40,7 +40,7 @@ impl IOAuthProvider for DiscordOAuthProvider {
             client_id: self.config.discord_auth_client_id.clone(),
             client_secret: self.config.discord_auth_client_secret.clone(),
             grant_type: String::from("authorization_code"),
-            code: String::from(code),
+            code,
             redirect_uri: self.config.discord_auth_redirect_uri.clone(),
         }
     }
