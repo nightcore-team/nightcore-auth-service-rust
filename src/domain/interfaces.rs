@@ -6,14 +6,16 @@ use crate::domain::exceptions::AuthError;
 #[async_trait]
 pub trait IOAuthProvider: Send + Sync {
     fn get_authorization_url(&self) -> String;
-    fn get_request_data(&self, code: &str) -> RequestData;
-    async fn exchange_code(&self, code: Option<&str>) -> Result<TokenData, AuthError>;
-    async fn get_user_info(&self, token_data: &TokenData) -> Result<DiscordUser, AuthError>;
+    fn get_request_data(&self, code: String) -> RequestData;
+    async fn exchange_code(&self, code: String) -> Result<TokenData, AuthError>;
+    async fn get_user_info(&self, token_data: TokenData) -> Result<DiscordUser, AuthError>;
 }
 
 pub trait ITokenService: Send + Sync {
     fn create_access_token(&self, user_id: &str) -> String;
     fn create_refresh_token(&self) -> String;
+    fn sign(&self, payload: serde_json::Value) -> Result<String, AuthError>;
+    fn decode_key(&self, v: &str) -> String;
 }
 
 #[async_trait]
@@ -31,7 +33,7 @@ pub trait IStorageRepository: Send + Sync {
 }
 
 #[async_trait]
-pub trait IOICService {
+pub trait IOICService: Send + Sync {
     async fn login(&self, code: &str, ip_address: &str) -> Token;
     async fn refresh(&self, refresh_token: &str, ip_address: &str) -> Token;
     async fn logout(&self, user_id: &str, refresh_token: &str);

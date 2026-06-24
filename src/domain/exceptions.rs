@@ -8,6 +8,9 @@ pub enum AuthError {
     #[error("Invalid refresh token")]
     RefreshTokenNotProvided,
 
+    #[error("Invalid token signature: {0}")]
+    InvalidToken(String),
+
     #[error("Token has been revoked")]
     TokenRevoked,
 

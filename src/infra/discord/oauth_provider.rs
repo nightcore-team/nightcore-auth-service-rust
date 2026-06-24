@@ -39,7 +39,7 @@ impl IOAuthProvider for DiscordOAuthProvider {
         )
     }
 
-    fn get_request_data(&self, code: &str) -> RequestData {
+    fn get_request_data(&self, code: String) -> RequestData {
         RequestData {
             client_id: self.config.discord_auth_client_id.clone(),
             client_secret: self.config.discord_auth_client_secret.clone(),
@@ -49,9 +49,7 @@ impl IOAuthProvider for DiscordOAuthProvider {
         }
     }
 
-    async fn exchange_code(&self, code: Option<&str>) -> Result<TokenData, AuthError> {
-        let code = code.ok_or(AuthError::AuthorizationCodeNotProvided)?;
-
+    async fn exchange_code(&self, code: String) -> Result<TokenData, AuthError> {
         let response = self
             .client
             .post("https://discord.com/api/oauth2/token")
@@ -72,13 +70,14 @@ impl IOAuthProvider for DiscordOAuthProvider {
         Ok(token_data)
     }
 
-    async fn get_user_info(&self, token_data: &TokenData) -> Result<DiscordUser, AuthError> {
+    async fn get_user_info(&self, token_data: TokenData) -> Result<DiscordUser, AuthError> {
         let response = self
             .client
             .get("https://discord.com/api/users/@me")
             .bearer_auth(&token_data.access_token)
             .send()
-            .await?;
+            .await
+            .map_err(|e| AuthError::DiscordAuth(e.to_string()))?;
 
         let status = response.status();
         if !status.is_success() {

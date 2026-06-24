@@ -71,10 +71,38 @@ impl BaseConfig for ApiConfig {
 }
 
 #[derive(Clone)]
+pub struct JWTConfig {
+    pub jwt_public_key: String,
+    pub jwt_private_key: String,
+    pub jwt_algorithm: String,
+    pub jwt_access_token_expire_minutes: u64,
+    pub jwt_refresh_token_expire_days: i64,
+}
+
+impl BaseConfig for JWTConfig {
+    fn from_env() -> Self {
+        Self {
+            jwt_public_key: env::var("JWT_PUBLIC_KEY").expect("JWT_PUBLIC_KEY must be set"),
+            jwt_private_key: env::var("JWT_PRIVATE_KEY").expect("JWT_PRIVATE_KEY must be set"),
+            jwt_algorithm: env::var("JWT_ALGORITHM").expect("JWT_ALGORITHM must be set"),
+            jwt_access_token_expire_minutes: env::var("JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
+                .unwrap_or_else(|_| "2".to_string())
+                .parse()
+                .expect("JWT_ACCESS_TOKEN_EXPIRE_MINUTES must be a number"),
+            jwt_refresh_token_expire_days: env::var("JWT_REFRESH_TOKEN_EXPIRE_DAYS")
+                .unwrap_or_else(|_| "30".to_string())
+                .parse()
+                .expect("JWT_REFRESH_TOKEN_EXPIRE_DAYS must be a number"),
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct AppConfig {
     pub redis: RedisConfig,
     pub discord: DiscordConfig,
     pub api: ApiConfig,
+    pub jwt: JWTConfig,
 }
 
 impl AppConfig {
@@ -83,6 +111,7 @@ impl AppConfig {
             redis: RedisConfig::from_env(),
             discord: DiscordConfig::from_env(),
             api: ApiConfig::from_env(),
+            jwt: JWTConfig::from_env(),
         }
     }
 }

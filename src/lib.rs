@@ -12,15 +12,15 @@ pub mod infra;
 pub mod services;
 pub mod utils;
 
-use crate::api::endpoints::auth::{
+use crate::api::routes::auth::{
     discord_callback_handler, login_handler, logout_handler, refresh_token_handler,
 };
 use crate::api::state::GlobalState;
 use crate::core::config::AppConfig;
 use crate::core::env::load_dotend;
 use crate::infra::discord::oauth_provider::DiscordOAuthProvider;
-use crate::infra::redis::client::create_redis_client;
-use crate::infra::redis::repository::RedisStorageRepository;
+// use crate::infra::redis::client::create_redis_client;
+// use crate::infra::redis::repository::RedisStorageRepository;
 use crate::services::jwt_service::JwtTokenService;
 use crate::services::oic_service::OICService;
 use crate::utils::logging::setup_logging;
@@ -30,15 +30,15 @@ async fn setup_application() -> (Router, TcpListener, String) {
 
     let bind = format!("{}:{}", config.api.api_host, config.api.api_port);
 
-    let redis_client = create_redis_client(&config.redis)
-        .await
-        .expect("Failed to connect to redis.");
+    // let redis_client = create_redis_client(&config.redis)
+    //     .await
+    //     .expect("Failed to connect to redis.");
 
     let oauth_provider = Arc::new(DiscordOAuthProvider::new(Arc::new(config.discord.clone())));
-    let storage = Arc::new(RedisStorageRepository::new(redis_client));
-    let token_service = Arc::new(JwtTokenService::new());
+    // let storage = Arc::new(RedisStorageRepository::new(redis_client));
+    let token_service = Arc::new(JwtTokenService::new(Arc::new(config.jwt.clone())));
 
-    let oic_service = OICService::new(oauth_provider, token_service, storage);
+    let oic_service = OICService::new(oauth_provider, token_service, Arc::new(config.clone()));
 
     let state = Arc::new(GlobalState {
         config,

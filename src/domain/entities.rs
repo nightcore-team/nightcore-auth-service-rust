@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 pub struct Token {
     pub access_token: String,
     pub refresh_token: String,
+    pub refresh_token_max_age: i64,
 }
 
 #[derive(Deserialize)]
@@ -34,4 +35,13 @@ pub struct Session {
 #[derive(Deserialize)]
 pub struct DiscordUser {
     pub id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JWTPayload {
+    pub iat: u64,
+    pub exp: u64,
+
+    #[serde(flatten)]
+    pub payload: serde_json::Value,
 }
