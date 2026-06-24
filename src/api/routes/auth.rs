@@ -6,6 +6,7 @@ use axum::extract::{Query, State};
 use axum::http::status::StatusCode;
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, CookieJar};
+use tracing::{info, warn};
 
 use crate::api::state::GlobalState;
 use crate::api::utils::auth_error_response;
@@ -29,6 +30,7 @@ pub async fn refresh_token_handler(
     let refresh_token = jar.get("refresh_token").map(|c| c.value().to_string());
 
     let Some(refresh_token) = refresh_token else {
+        warn!("Refresh attempt without refresh_token cookie");
         return auth_error_response(AuthError::RefreshTokenNotProvided).into_response();
     };
 
@@ -36,6 +38,8 @@ pub async fn refresh_token_handler(
         Ok(token) => token,
         Err(e) => return auth_error_response(e).into_response(),
     };
+
+    info!("Tokens refreshed successfully");
 
     let cookie = Cookie::build(("refresh_token", token.refresh_token))
         .http_only(true)
@@ -69,6 +73,7 @@ pub async fn logout_handler(
     let refresh_token = jar.get("refresh_token").map(|c| c.value().to_string());
 
     if let Some(refresh_token) = refresh_token {
+        info!("User logging out");
         let _ = state.oic_service.logout("", &refresh_token).await;
     }
 
@@ -90,6 +95,7 @@ pub async fn logout_handler(
     ),
 )]
 pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Redirect {
+    info!("Login flow started, redirecting to Discord");
     Redirect::temporary(&state.oic_service.oauth_provider.get_authorization_url())
 }
 
@@ -120,6 +126,7 @@ pub async fn discord_callback_handler(
     }
 
     let Some(code) = code else {
+        warn!("Discord callback missing code parameter");
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
@@ -128,6 +135,8 @@ pub async fn discord_callback_handler(
         )
             .into_response();
     };
+
+    info!("Discord callback received, exchanging code");
 
     let token = match state.oic_service.login(code).await {
         Ok(token) => token,

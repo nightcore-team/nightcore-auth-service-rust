@@ -6,6 +6,7 @@ use base64::Engine as _;
 use base64::engine::general_purpose;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use serde_json::json;
+use tracing::debug;
 use uuid::Uuid;
 
 use crate::core::config::JWTConfig;
@@ -48,6 +49,10 @@ impl ITokenService for JwtTokenService {
             exp: now + (self.config.jwt_access_token_expire_minutes * 60),
             payload,
         };
+
+        let sub = claims.payload.get("sub").and_then(|v| v.as_str()).unwrap_or("?");
+
+        debug!(user_id = %sub, "Signing access token");
 
         encode(
             &Header::new(Algorithm::from_str(&self.config.jwt_algorithm).unwrap()),

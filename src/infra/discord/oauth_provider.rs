@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use reqwest::Client;
+use tracing::{info, warn};
 
 use crate::core::config::DiscordConfig;
 use crate::domain::entities::{DiscordUser, RequestData, TokenData};
@@ -57,12 +58,14 @@ impl IOAuthProvider for DiscordOAuthProvider {
         let status = response.status();
         if !status.is_success() {
             let body = response.text().await?;
+            warn!(discord_status = %status, "Discord token exchange failed");
             return Err(AuthError::DiscordAuth(format!(
                 "Discord API error {status}: {body}"
             )));
         }
 
         let token_data: TokenData = response.json().await?;
+        info!("Discord token exchange succeeded");
         Ok(token_data)
     }
 
@@ -78,12 +81,14 @@ impl IOAuthProvider for DiscordOAuthProvider {
         let status = response.status();
         if !status.is_success() {
             let body = response.text().await?;
+            warn!(discord_status = %status, "Discord user info request failed");
             return Err(AuthError::DiscordAuth(format!(
                 "Discord API error {status}: {body}"
             )));
         }
 
         let user: DiscordUser = response.json().await?;
+        info!(discord_user_id = %user.id, "Discord user info retrieved");
         Ok(user)
     }
 }

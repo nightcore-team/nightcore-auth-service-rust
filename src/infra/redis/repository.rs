@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use redis::AsyncCommands;
 use redis::aio::ConnectionManager;
+use tracing::debug;
 
 use crate::domain::entities::Session;
 use crate::domain::exceptions::AuthError;
@@ -37,6 +38,8 @@ impl IStorageRepository for RedisStorageRepository {
         let json = serde_json::to_string(&session)?;
         let mut conn = self.client.clone();
 
+        debug!(user_id = %user_id, ttl = %ttl, "Creating session in Redis");
+
         let _: () = redis::pipe()
             .set_ex(Self::session_key(refresh_token), &json, ttl as u64)
             .sadd(Self::user_sessions_key(user_id), refresh_token)
@@ -54,16 +57,21 @@ impl IStorageRepository for RedisStorageRepository {
         match data {
             Some(json) => {
                 let session: Session = serde_json::from_str(&json)?;
+                debug!(user_id = %session.user_id, "Session found and deleted from Redis");
                 let _: () = conn
                     .srem(Self::user_sessions_key(&session.user_id), refresh_token)
                     .await?;
                 Ok(Some(session))
             },
-            None => Ok(None),
+            None => {
+                debug!("Session not found in Redis");
+                Ok(None)
+            },
         }
     }
 
     async fn delete(&self, user_id: &str, refresh_token: &str) -> Result<(), AuthError> {
+        debug!(user_id = %user_id, "Deleting session from Redis");
         let mut conn = self.client.clone();
         let _: () = redis::pipe()
             .del(Self::session_key(refresh_token))
@@ -74,6 +82,7 @@ impl IStorageRepository for RedisStorageRepository {
     }
 
     async fn delete_all(&self, user_id: &str) -> Result<u64, AuthError> {
+        debug!(user_id = %user_id, "Deleting all user sessions from Redis");
         let mut conn = self.client.clone();
         let tokens: Vec<String> = conn.smembers(Self::user_sessions_key(user_id)).await?;
 

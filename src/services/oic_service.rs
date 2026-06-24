@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use tracing::{info, warn};
 
 use crate::core::config::AppConfig;
 use crate::domain::entities::Token;
@@ -39,6 +40,8 @@ impl IOICService for OICService {
             .await?;
         let user_info = self.oauth_provider.get_user_info(token_data).await?;
 
+        info!(user_id = %user_info.id, "User logged in via Discord");
+
         let access_token = self.token_service.create_access_token(&user_info.id)?;
         let refresh_token = self.token_service.create_refresh_token();
         let refresh_token_max_age = self.config.jwt.jwt_refresh_token_expire_days * 24 * 3600;
@@ -59,8 +62,11 @@ impl IOICService for OICService {
         let session = self.storage.get_del(refresh_token).await?;
 
         let Some(session) = session else {
+            warn!("Refresh token not found");
             return Err(AuthError::SessionNotFound("Session not found".into()));
         };
+
+        info!(user_id = %session.user_id, "Tokens refreshed");
 
         let access_token = self.token_service.create_access_token(&session.user_id)?;
         let refresh_token = self.token_service.create_refresh_token();
@@ -78,6 +84,7 @@ impl IOICService for OICService {
     }
 
     async fn logout(&self, user_id: &str, refresh_token: &str) -> Result<(), AuthError> {
+        info!(user_id = %user_id, "User logged out");
         self.storage.delete(user_id, refresh_token).await?;
         Ok(())
     }
