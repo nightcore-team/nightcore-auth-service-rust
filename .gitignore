@@ -29,3 +29,6 @@ target
 
 # MacOS files metadata
 .DS_Store
+
+# Redis
+.redisinsight

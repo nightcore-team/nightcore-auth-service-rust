@@ -1,4 +1,4 @@
-FROM rust:bookworm AS builder
+FROM rust:slim-bookworm AS builder
 
 WORKDIR /app
 

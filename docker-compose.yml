@@ -4,7 +4,6 @@ networks:
   nightcore-network:
     name: nightcore-network
     driver: bridge
-    external: true
 
 services:
   nightcore-auth-service:
@@ -28,7 +27,7 @@ services:
       - "${API_PORT}:${API_PORT}"
 
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${API_PORT}/health"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${API_PORT}/health" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -45,7 +44,7 @@ services:
       - "${REDIS_PORT}:${REDIS_PORT}"
 
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
