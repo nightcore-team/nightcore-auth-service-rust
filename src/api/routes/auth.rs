@@ -1,15 +1,16 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use axum::{
-    Json,
-    body::Body,
-    extract::{Query, State},
-    http::{Request, status::StatusCode},
-    response::{IntoResponse, Redirect},
-};
+use axum::Json;
+use axum::body::Body;
+use axum::extract::{Query, State};
+use axum::http::Request;
+use axum::http::status::StatusCode;
+use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::cookie::{Cookie, CookieJar};
 
-use crate::{api::state::GlobalState, domain::interfaces::IOICService};
+use crate::api::state::GlobalState;
+use crate::domain::interfaces::IOICService;
 
 pub async fn refresh_token_handler(
     State(state): State<Arc<GlobalState>>,

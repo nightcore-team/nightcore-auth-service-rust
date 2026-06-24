@@ -1,18 +1,19 @@
-use std::{
-    str::FromStr,
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::{
-    core::config::JWTConfig,
-    domain::{entities::JWTPayload, exceptions::AuthError, interfaces::ITokenService},
-};
-use base64::{Engine as _, engine::general_purpose};
+use base64::Engine as _;
+use base64::engine::general_purpose;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
-use rand::{RngExt, distr::Alphanumeric};
+use rand::RngExt;
+use rand::distr::Alphanumeric;
 use serde_json::json;
 use uuid::Uuid;
+
+use crate::core::config::JWTConfig;
+use crate::domain::entities::JWTPayload;
+use crate::domain::exceptions::AuthError;
+use crate::domain::interfaces::ITokenService;
 
 pub struct JwtTokenService {
     config: Arc<JWTConfig>,

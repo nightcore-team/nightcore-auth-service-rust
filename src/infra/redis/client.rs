@@ -1,4 +1,5 @@
-use redis::{RedisError, aio::ConnectionManager};
+use redis::RedisError;
+use redis::aio::ConnectionManager;
 
 use crate::core::config::RedisConfig;
 

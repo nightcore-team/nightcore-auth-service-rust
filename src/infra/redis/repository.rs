@@ -1,10 +1,10 @@
-use crate::domain::entities::Session;
-use crate::domain::exceptions::AuthError;
-use crate::domain::interfaces::IStorageRepository;
-
 use async_trait::async_trait;
 use redis::AsyncCommands;
 use redis::aio::ConnectionManager;
+
+use crate::domain::entities::Session;
+use crate::domain::exceptions::AuthError;
+use crate::domain::interfaces::IStorageRepository;
 
 pub struct RedisStorageRepository {
     client: ConnectionManager,

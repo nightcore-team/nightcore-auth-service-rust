@@ -3,14 +3,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use reqwest::Client;
 
-use crate::{
-    core::config::DiscordConfig,
-    domain::{
-        entities::{DiscordUser, RequestData, TokenData},
-        exceptions::AuthError,
-        interfaces::IOAuthProvider,
-    },
-};
+use crate::core::config::DiscordConfig;
+use crate::domain::entities::{DiscordUser, RequestData, TokenData};
+use crate::domain::exceptions::AuthError;
+use crate::domain::interfaces::IOAuthProvider;
 
 pub struct DiscordOAuthProvider {
     config: Arc<DiscordConfig>,

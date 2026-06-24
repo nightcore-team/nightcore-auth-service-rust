@@ -1,0 +1,41 @@
+# rustfmt.toml
+edition = "2021"
+
+# Line width — 100 is widely accepted, Rust stdlib uses 100
+max_width = 100
+
+# Indentation
+tab_spaces = 4
+hard_tabs = false
+
+# Newlines
+newline_style = "Unix"
+
+# Imports — group std, external crates, internal (like isort)
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+
+# Trailing commas in multiline expressions
+trailing_comma = "Vertical"
+
+# Consistent brace style
+brace_style = "SameLineWhere"
+
+# Format comments
+comment_width = 100
+wrap_comments = true
+
+# Normalize doc comments to ///
+normalize_doc_attributes = true
+
+# Consistent match arm formatting
+match_block_trailing_comma = true
+
+# Remove trailing semicolons in blocks where unnecessary
+remove_nested_parens = true
+
+# Reorder imports and modules alphabetically
+reorder_imports = true
+reorder_modules = true
+
+unstable_features = true
