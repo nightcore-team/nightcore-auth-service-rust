@@ -1,5 +1,7 @@
+use axum::Json;
+use axum::http::StatusCode;
+
 use crate::domain::exceptions::AuthError;
-use axum::{Json, http::StatusCode};
 
 pub fn auth_error_response(err: AuthError) -> (StatusCode, Json<serde_json::Value>) {
     let status = match err {
