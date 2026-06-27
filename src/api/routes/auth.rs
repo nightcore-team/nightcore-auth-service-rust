@@ -130,7 +130,7 @@ pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Response {
     ),
     responses(
         (status = 302, description = "Redirect to dashboard with refresh_token cookie"),
-        (status = 400, description = "Authorization code not found", body = inline(serde_json::Value)),
+        (status = 400, description = "Authorization code/state token not found/invalid", body = inline(serde_json::Value)),
         (status = 403, description = "Direct access not allowed", body = inline(serde_json::Value)),
         (status = 502, description = "Discord API error", body = inline(serde_json::Value)),
     ),
