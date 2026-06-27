@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::Json;
-use axum::extract::{Query, Request, State};
+use axum::extract::{Query, State};
 use axum::http::status::StatusCode;
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
