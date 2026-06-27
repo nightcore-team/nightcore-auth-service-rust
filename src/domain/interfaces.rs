@@ -5,7 +5,7 @@ use crate::domain::exceptions::AuthError;
 
 #[async_trait]
 pub trait IOAuthProvider: Send + Sync {
-    fn get_authorization_url(&self) -> String;
+    fn get_authorization_url(&self, state: &str) -> String;
     fn get_request_data(&self, code: String) -> RequestData;
     async fn exchange_code(&self, code: String) -> Result<TokenData, AuthError>;
     async fn get_user_info(&self, token_data: TokenData) -> Result<DiscordUser, AuthError>;

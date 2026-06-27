@@ -2,11 +2,12 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use axum::Json;
-use axum::extract::{Query, State};
+use axum::extract::{Query, Request, State};
 use axum::http::status::StatusCode;
-use axum::response::{IntoResponse, Redirect};
-use axum_extra::extract::cookie::{Cookie, CookieJar};
+use axum::response::{IntoResponse, Redirect, Response};
+use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use tracing::{info, warn};
+use uuid::Uuid;
 
 use crate::api::state::GlobalState;
 use crate::api::utils::auth_error_response;
@@ -87,6 +88,7 @@ pub async fn logout_handler(
 
     (jar, Redirect::to(&state.config.api.dashboard_frontend_uri)).into_response()
 }
+
 #[utoipa::path(
     get,
     path = "/auth/login",
@@ -94,9 +96,29 @@ pub async fn logout_handler(
         (status = 302, description = "Redirect to Discord OAuth authorization URL"),
     ),
 )]
-pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Redirect {
+pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Response {
     info!("Login flow started, redirecting to Discord");
-    Redirect::temporary(&state.oic_service.oauth_provider.get_authorization_url())
+    let state_token = Uuid::new_v4().to_string();
+
+    let cookie = Cookie::build(("oauth_state", state_token.clone()))
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .max_age(time::Duration::seconds(300))
+        .path("/")
+        .build();
+
+    let jar = CookieJar::new().add(cookie);
+
+    (
+        jar,
+        Redirect::temporary(
+            &state
+                .oic_service
+                .oauth_provider
+                .get_authorization_url(&state_token),
+        ),
+    )
+        .into_response()
 }
 
 #[utoipa::path(
@@ -114,11 +136,14 @@ pub async fn login_handler(State(state): State<Arc<GlobalState>>) -> Redirect {
     ),
 )]
 pub async fn discord_callback_handler(
+    jar: CookieJar,
     State(state): State<Arc<GlobalState>>,
     Query(params): Query<HashMap<String, String>>,
 ) -> impl IntoResponse {
     let error = params.get("error");
     let code = params.get("code");
+    let state_token = params.get("state");
+    let oauth_cookie = jar.get("oauth_state").map(|v| v.value().to_string());
 
     if let Some(e) = error {
         tracing::error!(error = %e, "OAuth callback returned an error");
@@ -130,11 +155,32 @@ pub async fn discord_callback_handler(
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({
-                "detail": "Code is not found in query"
+                "detail": "code is not found in query"
             })),
         )
             .into_response();
     };
+
+    let Some(state_token) = state_token else {
+        warn!("State token parameter");
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "detail": "state token is not found in query"
+            })),
+        )
+            .into_response();
+    };
+
+    if oauth_cookie.as_deref() != Some(state_token.as_str()) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "detail": "invalid state token provided"
+            })),
+        )
+            .into_response();
+    }
 
     info!("Discord callback received, exchanging code");
 
@@ -145,6 +191,7 @@ pub async fn discord_callback_handler(
 
     let cookie = Cookie::build(("refresh_token", token.refresh_token))
         .http_only(true)
+        .same_site(SameSite::Lax)
         .max_age(time::Duration::seconds(token.refresh_token_max_age))
         .path("/")
         .build();

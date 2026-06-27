@@ -25,15 +25,15 @@ impl DiscordOAuthProvider {
 
 #[async_trait]
 impl IOAuthProvider for DiscordOAuthProvider {
-    fn get_authorization_url(&self) -> String {
+    fn get_authorization_url(&self, state: &str) -> String {
         format!(
             "https://discord.com/oauth2/authorize\
              ?client_id={}\
              &redirect_uri={}\
              &response_type=code\
-             &scope=identify",
-            self.config.discord_auth_client_id,
-            self.config.discord_auth_redirect_uri,
+             &scope=identify\
+             &state={}",
+            self.config.discord_auth_client_id, self.config.discord_auth_redirect_uri, state,
         )
     }
 
