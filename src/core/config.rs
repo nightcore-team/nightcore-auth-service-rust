@@ -1,4 +1,5 @@
 use std::env;
+use std::sync::Arc;
 
 pub trait BaseConfig: Sized {
     fn from_env() -> Self;
@@ -29,7 +30,6 @@ impl BaseConfig for RedisConfig {
     }
 }
 
-#[derive(Clone)]
 pub struct DiscordConfig {
     pub discord_auth_client_id: String,
     pub discord_auth_client_secret: String,
@@ -70,7 +70,6 @@ impl BaseConfig for ApiConfig {
     }
 }
 
-#[derive(Clone)]
 pub struct JWTConfig {
     pub jwt_public_key: String,
     pub jwt_private_key: String,
@@ -100,18 +99,18 @@ impl BaseConfig for JWTConfig {
 #[derive(Clone)]
 pub struct AppConfig {
     pub redis: RedisConfig,
-    pub discord: DiscordConfig,
+    pub discord: Arc<DiscordConfig>,
     pub api: ApiConfig,
-    pub jwt: JWTConfig,
+    pub jwt: Arc<JWTConfig>,
 }
 
 impl AppConfig {
     pub fn from_env() -> Self {
         Self {
             redis: RedisConfig::from_env(),
-            discord: DiscordConfig::from_env(),
+            discord: Arc::new(DiscordConfig::from_env()),
             api: ApiConfig::from_env(),
-            jwt: JWTConfig::from_env(),
+            jwt: Arc::new(JWTConfig::from_env()),
         }
     }
 }

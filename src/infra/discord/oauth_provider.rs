@@ -32,7 +32,8 @@ impl IOAuthProvider for DiscordOAuthProvider {
              &redirect_uri={}\
              &response_type=code\
              &scope=identify",
-            self.config.discord_auth_client_id, self.config.discord_auth_redirect_uri,
+            self.config.discord_auth_client_id,
+            self.config.discord_auth_redirect_uri,
         )
     }
 

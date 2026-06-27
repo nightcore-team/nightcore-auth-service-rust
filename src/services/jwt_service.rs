@@ -25,7 +25,7 @@ pub struct JwtTokenService {
 
 impl JwtTokenService {
     pub fn new(config: Arc<JWTConfig>) -> Self {
-        Self { config: config }
+        Self { config }
     }
 }
 

@@ -38,9 +38,9 @@ async fn setup_application() -> (Router, TcpListener, String) {
         .await
         .expect("Failed to connect to redis");
 
-    let oauth_provider = Arc::new(DiscordOAuthProvider::new(Arc::new(config.discord.clone())));
+    let oauth_provider = Arc::new(DiscordOAuthProvider::new(config.discord.clone()));
     let storage = Arc::new(RedisStorageRepository::new(redis_client));
-    let token_service = Arc::new(JwtTokenService::new(Arc::new(config.jwt.clone())));
+    let token_service = Arc::new(JwtTokenService::new(config.jwt.clone()));
 
     let oic_service = OICService::new(oauth_provider, token_service, storage, config.clone());
 
